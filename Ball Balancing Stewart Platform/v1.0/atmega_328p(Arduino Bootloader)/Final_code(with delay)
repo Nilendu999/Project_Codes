@@ -1,0 +1,38 @@
+#include<Servo.h>
+Servo servox,servoy;
+const int sx=9;
+const int sy=8;
+const int ox=101,oy=112;
+int a,b;
+const int speedy=3;
+int delayy=250;
+int posy=0;
+void setup() 
+{
+  servox.attach(sx);
+  servoy.attach(sy);
+  servox.write(ox);
+  servoy.write(oy);
+}
+
+void loop() 
+{
+  posy=0;
+    Serial.begin(9600);
+  while(Serial.available()==0){}
+  a=Serial.readStringUntil('\t').toInt();
+  b = Serial.readStringUntil('\t').toInt();;
+  delayy=Serial.readStringUntil('\n').toInt();
+      constrain(a,0,180);
+      servox.write(a);
+      constrain(b,0,180);
+      posy+=b/speedy;
+      for(int i=1;i<=speedy;i++)
+      {
+        if(posy!=b)
+        {
+          servoy.write(posy*i);
+          delayMicroseconds(delayy);
+        }
+      }
+}
