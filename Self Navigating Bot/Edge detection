@@ -1,0 +1,88 @@
+import cv2
+import numpy as np
+#import requests
+#url='http://192.168.1.100:8080/shot.jpg'
+
+x1=0
+x2=0
+x3=0
+x4=0
+y1=0
+y2=0
+y3=0
+y4=0
+x1i=0
+x2i=0
+y3i=0
+y4i=0
+def nothing():
+    # any operation
+    pass
+
+cap = cv2.VideoCapture(0)
+cv2.namedWindow("Trackbars")
+cv2.createTrackbar("L-H", "Trackbars", 0, 180, nothing)
+cv2.createTrackbar("L-S", "Trackbars", 66, 255, nothing)
+cv2.createTrackbar("L-V", "Trackbars", 134, 255, nothing)
+cv2.createTrackbar("U-H", "Trackbars", 180, 180, nothing)
+cv2.createTrackbar("U-S", "Trackbars", 255, 255, nothing)
+cv2.createTrackbar("U-V", "Trackbars", 243, 255, nothing)
+cv2.createTrackbar("y1", "Trackbars", 0, 639, nothing)
+cv2.createTrackbar("y2", "Trackbars", 639, 639, nothing)
+cv2.createTrackbar("x1", "Trackbars", 0, 479, nothing)
+cv2.createTrackbar("x2", "Trackbars", 479, 479, nothing)
+
+font = cv2.FONT_HERSHEY_COMPLEX
+
+while True:
+    _, frame = cap.read()
+#    image_resp=requests.get(url)
+ #   img_arr=np.array(bytearray(image_resp.content),dtype=np.uint8)
+  #  frame=cv2.imdecode(img_arr,-1)
+
+    l_h = cv2.getTrackbarPos("L-H", "Trackbars")
+    l_s = cv2.getTrackbarPos("L-S", "Trackbars")
+    l_v = cv2.getTrackbarPos("L-V", "Trackbars")
+    u_h = cv2.getTrackbarPos("U-H", "Trackbars")
+    u_s = cv2.getTrackbarPos("U-S", "Trackbars")
+    u_v = cv2.getTrackbarPos("U-V", "Trackbars")
+    a1= cv2.getTrackbarPos("x1", "Trackbars")
+    a2 = cv2.getTrackbarPos("x2", "Trackbars")
+    b1 = cv2.getTrackbarPos("y1", "Trackbars")
+    b2 = cv2.getTrackbarPos("y2", "Trackbars")
+    result = frame[a1:a2, b1:b2]
+
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    #lower_white = np.array([l_h, l_s, l_v])
+    #upper_white = np.array([u_h, u_s, u_v])
+    lower_white = np.array([0, 0, 94])
+    upper_white = np.array([180, 56, 255])
+    maskwhite = cv2.inRange(hsv, lower_white, upper_white)
+    kernelwhite = np.ones((5, 5), np.uint8)
+    maskwhite = cv2.erode(maskwhite, kernelwhite)
+    blurwhite = cv2.GaussianBlur(maskwhite, (5, 5), 0)
+
+    contoursW, _ = cv2.findContours(blurwhite, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    for c2 in contoursW:
+            c3 = max(contoursW, key=cv2.contourArea)
+            cv2.drawContours(frame, [c3], -1, (0, 255, 255), 2)
+            extLeft = tuple(c3[c3[:, :, 0].argmin()][0])
+            extRight = tuple(c3[c3[:, :, 0].argmax()][0])
+            extTop = tuple(c3[c3[:, :, 1].argmin()][0])
+            extBot = tuple(c3[c3[:, :, 1].argmax()][0])
+            (x1,y1)=extLeft
+            (x2,y2)=extRight
+            (x3,y3)=extTop
+            (x4,y4)=extBot
+
+            print(x1,x2,x3,x4,y1,y2,y3,y4)
+    cv2.imshow("Frame", frame)
+    cv2.imshow('markw',maskwhite)
+    cv2.imshow("result",result)
+
+    key = cv2.waitKey(1)
+    if key == 27:
+        break
+
+#cap.release()
+cv2.destroyAllWindows()
