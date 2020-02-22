@@ -1,0 +1,181 @@
+#IMPORTING LIBRARIES
+import math
+import cv2
+import numpy as np
+import math
+import cv2
+import serial
+import imutils
+
+#VARIABLES FOR PID
+err=[0,0]
+norm=0
+intg=0
+prev_norm=0
+kp=0.325
+kd=9.75
+ki=0
+kd1=3.25
+
+ctnr=[0,0]
+ctnr1=[0,0]
+prev_ctnr=[0,0]
+motion_vec=[0,0]
+norm1=0
+
+cap = cv2.VideoCapture(0)
+
+#VARIABLES FOR X_SERVO
+ax=9.8#DIATANCE B/W X_SERVO CENTRE OF PLATE AND CONNECTOR LINK(FOLLOWER LINK)
+bx=1.7#LENGTH OF X_SERVO ATTACHMENT(CRANK)
+gx=12.1#DISTANCE B/W CENTRE OF PLATE AND CENTRE OF X_SERVO(GROUND LINK)
+hx=6.6#CONNECTOR LINK
+zx=1200#TILT(explained in report)
+rx=81#X_SERVO ANGLE FOR HORIZONTAL PLATE ORIENTATION
+#VARIABLES FOR Y_SERVO
+ay=9.8#DIATANCE B/W Y_SERVO CENTRE OF PLATE AND CONNECTOR LINK(FOLLOWER LINK)
+by=1.7#LENGTH OF Y_SERVO ATTACHMENT(CRANK)
+gy=12.1#DISTANCE B/W CENTRE OF PLATE AND CENTRE OF Y_SERVO(GROUND LINK)
+hy=6.6#CONNECTOR LINK
+zy=1200#TILT(explained in report)
+ry=87#Y_SERVO ANGLE FOR HORIZONTAL PLATE ORIENTATION
+#ANGLE BETWEEN PLATE AND FRAME
+phi=math.radians(6)
+delay=250
+#OUTPUT OF PID
+xx=0#SERVO_ANGLE FOR X_SERVO
+yy=0#SERVO_ANGLE FOR Y_SERVO
+
+#ORIGIN
+origin=[320,240]
+
+ser=serial.Serial('COM13',baudrate = 9600, timeout=1)
+def writeVal(x,y,de):
+    pass
+    ser.flush()
+    s= str(x) + '\t' + str(y)+'\t'+str(de)+'\n'
+    ser.write(s.encode())
+
+def calc(i,a,b,g,h,z,r):
+    arr=[2*(b*g),(2*a)*b,(a**2)+(b**2)+(g**2)-(h**2),2*(a*g)]
+    plate_angle=math.degrees(math.atan(i/z))
+    theta=(26+(float(plate_angle)))
+    theta=math.radians(theta)
+    ct=math.cos(theta)
+    st=math.sin(theta)
+    A=arr[0]-arr[1]*ct
+    B=(arr[1])*st
+    C=arr[2]-arr[3]*ct
+    ft=math.atan(A/B)
+    mod=math.sqrt(A*A+B*B)
+    p=C/mod
+    if(p<-1):
+        #print("!!!!!!!!DOMAIN ERROR!!!!!!!!")
+        p=-0.999
+    if(p>1):
+        #print("!!!!!!!!DOMAIN ERROR!!!!!!!!")
+        p=0.999
+    fs=math.asin(p)
+    psi=(ft+fs)
+    servo_angle=(r-math.degrees(psi))
+    return servo_angle
+norm_err=[0,0]
+
+def PID(xcor,ycor,fxcor,fycor):
+    global prev_norm
+    global norm
+    global norm_err
+    global intg
+    global motion_vec
+    global norm1
+    vec1=[0,0]
+    prev_norm=norm
+    err=[fxcor-xcor,fycor-ycor]
+    norm=math.sqrt((err[0]**2)+(err[1]**2))
+    if(norm!=0):
+        norm_err=[err[0]/norm,err[1]/norm]
+    angle=math.acos((norm_err[0]*motion_vec[0])+(norm_err[1]*motion_vec[1]))
+    mod1=(motion_vec[0]*norm_err[1])-(motion_vec[1]*norm_err[0])
+    if(mod1!=0):
+        vec1=[((norm_err[1]*math.sin(angle))/mod1),((norm_err[0]*math.sin(angle))/mod1)]
+    diff1=norm1*kd1
+    prop=norm*kp
+    diff=(norm-prev_norm)*kd
+    intg+=prev_norm*ki
+    fin=prop+diff+intg
+    print("angle= ",int(math.degrees(angle)),"    vec1[0]  ",int(vec1[0]),"vec1[1] ",int(vec1[1]), "\tcntrx :  ",ctnr[0],"\tcntry :  ",ctnr[1],)
+    return (norm_err[0]*fin)+(vec1[0]*diff1),norm_err[1]*fin+(vec1[1]*diff1)
+
+def cal_vec():
+    global motion_vec
+    global prev_ctnr
+    global ctnr1
+    global norm1
+    nv=[prev_ctnr[0]-ctnr[0],prev_ctnr[1]-ctnr[1]]
+    norm1=math.sqrt(nv[0]**2+nv[1]**2)
+    if (norm1!=0):
+        motion_vec=[nv[0]/norm1,nv[1]/norm1]
+    else:
+        motion_vec=[0,0]
+
+def constrain(value, min_value, max_value):
+    if (value<min_value):
+        return min_value
+    if (value>max_value):
+        return max_value
+    return value
+
+finalx=int(input("finalx : "))
+finaly=int(input("finaly : "))
+#delay=int(input("delay : "))          
+while True:
+    prev_ctnr=ctnr
+    _,frame=cap.read()
+    l_h = 0
+    l_s = 0
+    l_v = 0
+    u_h = 180
+    u_s = 255
+    u_v = 225
+    COLORLower = np.array([l_h, l_s, l_v])
+    COLORUpper = np.array([u_h, u_s, u_v])
+    frame = imutils.resize(frame, width=600)
+    blurred = cv2.GaussianBlur(frame, (11, 11), 0)
+    hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, COLORLower, COLORUpper)
+    mask = cv2.erode(mask, None, iterations=2)
+    mask = cv2.dilate(mask, None, iterations=2)
+    mask = cv2.bitwise_not(mask)
+    cv2.imshow("mask",mask)
+    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
+    center = None
+    if len(cnts) > 0:
+        c = max(cnts, key=cv2.contourArea)
+        ((x, y), radius) = cv2.minEnclosingCircle(c)
+        M = cv2.moments(c)
+        if(M["m00"]!=0):
+            center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+        else:
+            center=[0,0]
+        if radius > 10:
+            cv2.circle(frame, (int(x), int(y)), int(radius),(0, 255, 255), 2)
+            cv2.circle(frame, center, 5, (0, 0, 0), -1)
+    cv2.circle(frame, (int(origin[0]),int(origin[1])), 10, (0, 255, 255), -1)
+    cv2.imshow("Frame", frame)
+    if(center!=None):
+        ctnr=[center[1]-origin[1],(center[0]-origin[0])+35]
+    ctnr[0]=constrain(ctnr[0],-200,200)
+    ctnr[1]=constrain(ctnr[1],-200,200)
+    ctnr1=[(math.cos(phi)*ctnr[0]+math.sin(phi)*ctnr[1]),(math.cos(phi)*ctnr[1]-math.sin(phi)*ctnr[0])]#adjustment for camera position
+    cal_vec()
+    xx,yy=PID(ctnr1[0],ctnr1[1],finalx,finaly)
+    wx=int(calc(xx,ax,bx,gx,hx,zx,rx))
+    wy=int(calc(yy,ay,by,gy,hy,zy,ry))
+    writeVal((wx),(wy),delay)
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
+        break
+cap.release()
+cv2.destroyAllWindows()
+
