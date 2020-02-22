@@ -1,0 +1,55 @@
+import math
+import cv2
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+from matplotlib import style
+import numpy as np
+style.use('fivethirtyeight')
+fig=plt.figure()
+gr=fig.add_subplot(1,1,1)
+def nothing(x):
+    pass
+cv2.namedWindow("Trackbars")
+cv2.createTrackbar("a", "Trackbars", 980, 1200, nothing)
+cv2.createTrackbar("b", "Trackbars", 170, 1500, nothing)
+cv2.createTrackbar("h", "Trackbars", 660, 1500, nothing)
+cv2.createTrackbar("g", "Trackbars", 1210, 1500, nothing)
+def update(s):
+    a = cv2.getTrackbarPos("a", "Trackbars")/100
+    b = cv2.getTrackbarPos("b", "Trackbars")/100
+    g = cv2.getTrackbarPos("g", "Trackbars")/100
+    h = cv2.getTrackbarPos("h", "Trackbars")/100
+    arr=[2*(b*g),(2*a)*b,(a**2)+(b**2)+(g**2)-(h**2),2*(a*g)]
+    plate_angle=np.arange(23,43,0.1)
+    servo_angle=np.arange(23,43,0.1)
+    j=0
+    for i in plate_angle:
+        theta=plate_angle[j]
+        theta=math.radians(theta)
+        ct=math.cos(theta)
+        st=math.sin(theta)
+        A=arr[0]-arr[1]*ct
+        B=(arr[1])*st
+        C=arr[2]-arr[3]*ct
+        ft=math.atan(A/B)
+        mod=math.sqrt(A*A+B*B)
+        p=C/mod
+        if(p<-1):
+            print("!!!!!!!!DOMAIN ERROR!!!!!!!!")
+            p=0.999
+        elif(p>1):
+            print("!!!!!!!!DOMAIN ERROR!!!!!!!!")
+            p=-0.999
+        else :
+            print("IN DOMAIN")
+        fs=math.asin(p)
+        psi=(ft+fs)
+        servo_angle[j]=(132-math.degrees(psi))
+        j=j+1
+    gr.clear()
+    gr.plot(plate_angle,servo_angle)
+    plt.xlabel("plate_angle")
+    plt.ylabel("servo_angle")
+ani=animation.FuncAnimation(fig,update,interval=100)
+plt.show()
+
