@@ -1,0 +1,135 @@
+import cv2
+import numpy as np
+import requests
+url='http://192.168.1.103:8080/shot.jpg'
+import serial
+##arduinodata=serial.Serial('com4',9600)
+
+
+cXR=0
+cYR=0
+cXB=0
+cYB=0
+x1=100
+x2=380
+y1=80
+y2=639
+def nothing():
+    # any operation
+    pass
+
+cap = cv2.VideoCapture(0)
+
+cv2.namedWindow("Trackbars")
+cv2.createTrackbar("L-H", "Trackbars", 0, 180, nothing)
+cv2.createTrackbar("L-S", "Trackbars", 66, 255, nothing)
+cv2.createTrackbar("L-V", "Trackbars", 134, 255, nothing)
+cv2.createTrackbar("U-H", "Trackbars", 180, 180, nothing)
+cv2.createTrackbar("U-S", "Trackbars", 255, 255, nothing)
+cv2.createTrackbar("U-V", "Trackbars", 243, 255, nothing)
+
+font = cv2.FONT_HERSHEY_COMPLEX
+
+while True:
+    _, frame1 = cap.read()
+    #image_resp = requests.get(url)
+    #img_arr = np.array(bytearray(image_resp.content), dtype=np.uint8)
+    #frame = cv2.imdecode(img_arr, -1)
+    frame = frame1[x1:x2, y1:y2]
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    l_h = cv2.getTrackbarPos("L-H", "Trackbars")
+    l_s = cv2.getTrackbarPos("L-S", "Trackbars")
+    l_v = cv2.getTrackbarPos("L-V", "Trackbars")
+    u_h = cv2.getTrackbarPos("U-H", "Trackbars")
+    u_s = cv2.getTrackbarPos("U-S", "Trackbars")
+    u_v = cv2.getTrackbarPos("U-V", "Trackbars")
+
+    #lower_red = np.array([l_h, l_s, l_v])
+    #upper_red = np.array([u_h, u_s, u_v])
+    #lower_blue = np.array([l_h, l_s, l_v])
+    #upper_blue = np.array([u_h, u_s, u_v])
+    lower_red = np.array([0, 134, 99])
+    upper_red = np.array([14, 255, 231])
+    lower_blue = np.array([38, 96, 77])
+    upper_blue = np.array([180, 255, 255])
+
+    kernel = np.ones((5, 5), np.uint8)
+    maskr = cv2.inRange(hsv, lower_red, upper_red)
+    maskr = cv2.erode(maskr, kernel)
+    maskb = cv2.inRange(hsv, lower_blue, upper_blue)
+    maskb = cv2.erode(maskb, kernel)
+    #blurred=cv2.GaussianBlur(maskr,(5,5),0)
+
+    # Contours detection
+    contoursR,_ = cv2.findContours(maskr, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contoursB,_ = cv2.findContours(maskb, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    for cr in contoursR:
+        approxr = cv2.approxPolyDP(cr, 0.01*cv2.arcLength(cr, True), True)
+        arear = cv2.contourArea(cr)
+        if arear > 1000:
+         M = cv2.moments(cr)
+         cXR = int(M["m10"] / M["m00"])
+         cYR = int(M["m01"] / M["m00"])
+         cv2.drawContours(frame, [approxr], -1, (0, 255, 0), 2)
+         cv2.circle(frame, (cXR, cYR), 3, (255, 255, 255), -1)
+         cv2.putText(frame, "Red", (cXR - 20, cYR - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+    for cb in contoursB:
+        approxb = cv2.approxPolyDP(cb, 0.01 * cv2.arcLength(cb, True), True)
+        areab = cv2.contourArea(cb)
+        if areab > 1000:
+         M = cv2.moments(cb)
+         cXB = int(M["m10"] / M["m00"])
+         cYB = int(M["m01"] / M["m00"])
+         cv2.drawContours(frame, [approxb], -1, (0, 255, 0), 2)
+         cv2.circle(frame, (cXB, cYB), 3, (255, 255, 255), -1)
+         cv2.putText(frame, "Blue", (cXB - 20, cYB - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+    if cXR<cXB:
+      r = np.array([cXR, cYR])
+      b = np.array([cXB, cYB])
+      c = np.array([cXB, 0])
+      br = r - b
+      bc = c - b
+      cosine_angle = np.dot(br, bc) / (np.linalg.norm(br) * np.linalg.norm(bc))
+      anglei = np.arccos(cosine_angle)
+      angle = str(int(np.degrees(anglei)))
+      #arduinodata.write('acw'.encode())
+      #arduinodata.write('/'.encode())
+      #arduinodata.write(angle.encode())
+      #arduinodata.write('/'.encode())
+      #arduinodata.write('q'.encode())
+
+      print('acw', angle)
+    if cXR > cXB:
+         r = np.array([cXR, cYR])
+         b = np.array([cXB, cYB])
+         c = np.array([cXB, 0])
+         br = r - b
+         bc = c - b
+         cosine_angle = np.dot(br, bc) / (np.linalg.norm(br) * np.linalg.norm(bc))
+         anglei = np.arccos(cosine_angle)
+         angle = str(int(np.degrees(anglei)))
+         #arduinodata.write('cw'.encode())
+         #arduinodata.write('/'.encode())
+         #arduinodata.write(angle.encode())
+         #arduinodata.write('/'.encode())
+         #arduinodata.write('q'.encode())
+         print('cw',angle)
+
+    cv2.imshow("Frame", frame)
+    cv2.imshow("maskr",maskr)
+    #cv2.imshow("maskb",maskb)
+    #print(cXR,cYR)
+    #print(cXB,cYB)
+
+    cv2.waitKey(1000)
+
+    key = cv2.waitKey(1)
+    if key == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
