@@ -1,0 +1,141 @@
+#include<Servo.h>
+
+Servo s1;
+Servo s2;
+Servo pen;
+double angle1, angle2;      //1--base servo(8-160)  2--joint servo(1-142)- calibration.
+float a1 = 15, a2 = 17.25, x, y;
+int c = 1, iangle1, iangle2;
+void sweep(int, int);
+int xangle1, xangle2;
+void setup()
+{
+  Serial.begin(9600);
+
+  angle1 = 90; //initial angle values
+  angle2 = 0;
+  xangle1 = 90;
+  xangle2 = 0;
+  angle1 = map(angle1, 0, 180, 2, 142);
+  angle2 = map(angle2, 0, 180, 7, 159);
+  s1.attach(7);
+  s2.attach(4);
+  pen.attach(9);
+  s1.write(angle1);
+  s2.write(angle2);
+  pen.write(100);
+}
+
+void loop() {
+  if (Serial.available() > 0)
+  {
+    x = Serial.readStringUntil(' ').toFloat();    //recieving values
+    y = Serial.readStringUntil('\n').toFloat();
+    Serial.println(x);
+    Serial.println(y);
+    //x=600-x;
+
+    x = map(x, 0, 600, -22.1, -3); //mapping according to A4
+    y = map(y, 0, 600, 22, 3.2);
+
+    angle2 = acos((x * x + y * y - a1 * a1 - a2 * a2) / (2 * a1 * a2));
+    angle1 = atan(y / x) - atan((a2 * sin(angle2)) / (a1 + a2 * cos(angle2)));
+
+
+    if (angle1 < 0)
+    { angle1 += 3.14;
+    }
+
+    angle1 = angle1 * 57.2957795;
+    angle2 = angle2 * 57.2957795;
+    iangle1 = angle1;
+    iangle2 = angle2;
+
+
+    Serial.println(angle1);
+    Serial.println(angle2);
+    //s1.write(angle1);
+    //s2.write(angle2);
+    //sweep(iangle1,iangle2);
+
+    sweep(angle1, angle2);
+    Serial.println("sdf");
+    //delay(500);
+    pen.write(25);
+
+  }
+}
+//i angle1
+//j angle2
+
+int diff1, diff2;
+
+void sweep(int iangle1, int iangle2)
+{ Serial.println("sweep");
+  if (xangle1 > iangle1)
+  {
+    diff1 = 0;
+  }
+  else
+  {
+    diff1 = 1;
+  }
+  if (xangle2 > iangle2)
+  {
+    diff2 = 0;
+  }
+  else {
+    diff2 = 1;
+  }
+  int i = xangle1;
+  int j = xangle2;
+  while (!((i == iangle1) && (j == iangle2)))
+  {
+
+    if (diff1 == 0 && diff2 == 0)
+    {
+      if (i > iangle1) {
+        i--;
+      }
+      if (j > iangle2) {
+        j--;
+      }
+    }
+    if (diff1 == 0 && diff2 == 1) {
+      if (i > iangle1) {
+        i--;
+      }
+      if (j < iangle2) {
+        j++;
+      }
+    }
+    if (diff1 == 1 && diff2 == 0)
+    {
+      if (i < iangle1) {
+        i++;
+      }
+      if (j > iangle2) {
+        j--;
+      }
+    }
+    if (diff1 == 1 && diff2 == 1) {
+      if (i < iangle1) {
+        i++;
+      }
+      if (j < iangle2) {
+        j++;
+      }
+    }
+
+    i = map(i, 0, 180, 3, 144);
+    j = map(j, 0, 180, 7, 161);
+    s1.write(i);
+    s2.write(j);
+    Serial.println(i);
+    Serial.println(j);
+
+    delay(100);
+  }
+  xangle1 = iangle1;
+  xangle2 = iangle2;
+}
