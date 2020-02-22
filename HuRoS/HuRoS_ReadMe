@@ -1,1 +1,13 @@
+HuRoS 
+
+ABSTRACT:
+
+The goal for this year is to implement inverse kinematics and make the bipedal robot to walk using
+the gait generated from the inverse kinematics. At first, some hardware parts on the bot must be 
+modified such that they are robust and withstand the load, and eliminate the slip present in the gears
+. We need to fabricate PCBs for electrical circuit and attach end contact switches for safety. Once
+the fabrication is completely done, we'll focus on moving the bot in forward kinematics to test the 
+robustness of the design and make minor tweaks. After this is achieved we'll implement inverse kinematics
+and tune the control of the bipedal robot.
+
 
