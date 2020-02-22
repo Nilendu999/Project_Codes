@@ -1,0 +1,412 @@
+import cv2
+import numpy as np
+#import requests
+import pygame
+import serial
+arduinodata=serial.Serial('com9',9600)
+#url='http://192.168.1.100:8080/shot.jpg'
+u=1
+cXR=0
+cYR=0
+cXB=0
+cYB=0
+x1=0
+x2=431
+x3=235
+x4=138
+y1=176
+y2=551
+y3=98
+y4=479
+xd=x2-x1
+yd=y2-y1
+m=int(xd/10)
+n=int(yd/10)
+c=0
+black=(0,0,0)
+white=(255,255,255)
+red=(255,0,0)
+green=(0,255,0)
+blue=(0,0,255)
+anglei='0'
+jr=0
+ir=0
+ib=0
+jb=0
+angleii=0
+direction='c'
+path1='f'
+def nothing():
+    # any operation
+    pass
+
+#cv2.namedWindow("Trackbars")
+cv2.createTrackbar("L-H", "Trackbars", 0, 180, nothing)
+cv2.createTrackbar("L-S", "Trackbars", 66, 255, nothing)
+cv2.createTrackbar("L-V", "Trackbars", 134, 255, nothing)
+cv2.createTrackbar("U-H", "Trackbars", 180, 180, nothing)
+cv2.createTrackbar("U-S", "Trackbars", 255, 255, nothing)
+cv2.createTrackbar("U-V", "Trackbars", 243, 255, nothing)
+
+font = cv2.FONT_HERSHEY_COMPLEX
+class Node:
+
+    def __init__(self, parent=None, position=None):
+        self.parent = parent
+        self.position = position
+
+        self.g = 0
+        self.h = 0
+        self.f = 0
+
+    def __eq__(self, other):
+        return self.position == other.position
+
+
+def astar(maze, start, end):
+
+    # Create start and end node
+    start_node = Node(None, start)
+    start_node.g = start_node.h = start_node.f = 0
+    end_node = Node(None, end)
+    end_node.g = end_node.h = end_node.f = 0
+
+
+    open_list = []
+    closed_list = []
+
+    open_list.append(start_node)
+
+    while len(open_list) > 0:
+
+
+        current_node = open_list[0]
+        current_index = 0
+        for index, item in enumerate(open_list):
+            if item.f < current_node.f:
+                current_node = item
+                current_index = index
+
+        open_list.pop(current_index)
+        closed_list.append(current_node)
+
+        if current_node == end_node:
+            path = []
+            current = current_node
+            while current is not None:
+                path.append(current.position)
+                current = current.parent
+            return path[::-1]
+
+        children = []
+        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
+
+
+            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
+
+            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (
+                    len(maze[len(maze) - 1]) - 1) or node_position[1] < 0:
+                continue
+
+
+            if maze[node_position[0]][node_position[1]] != 0:
+                continue
+
+
+            new_node = Node(current_node, node_position)
+
+
+            children.append(new_node)
+
+
+        for child in children:
+
+
+            for closed_child in closed_list:
+                if child == closed_child:
+                    continue
+
+
+            child.g = current_node.g + 1
+            child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
+                        (child.position[1] - end_node.position[1]) ** 2)
+            child.f = child.g + child.h
+
+
+            for open_node in open_list:
+                if child == open_node and child.g > open_node.g:
+                    continue
+
+            open_list.append(child)
+
+
+def main():
+
+    maze = matrix
+    start = (ir, jr)
+    end = (0, 4)
+    path = astar(maze, start, end)
+    #print(path)
+    return path
+cap = cv2.VideoCapture(0)
+while True:
+    p=0
+    q=0
+    _, frame1= cap.read()
+#    image_resp = requests.get(url)
+ #   img_arr = np.array(bytearray(image_resp.content), dtype=np.uint8)
+    #frame1 = cv2.imdecode(img_arr, -1)
+    frame=frame1[x1:x2,y1:y2]
+   # pts1 = np.float32([[x1 + 90, y3], [x2 - 60, y3 + 20], [x1, y4], [x2, y4]])
+    #pts2 = np.float32([[0, 0], [500, 0], [0, 600], [500, 600]])
+    #matriximage = cv2.getPerspectiveTransform(pts1, pts2)
+    #frame = cv2.warpPerspective(frame1, matriximage, (500, 600))
+    img_name = "opencv_frame_{}.png".format(0)
+    cv2.imwrite(img_name, frame)
+    #print("{} written!".format(img_name))
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    l_h = cv2.getTrackbarPos("L-H", "Trackbars")
+    l_s = cv2.getTrackbarPos("L-S", "Trackbars")
+    l_v = cv2.getTrackbarPos("L-V", "Trackbars")
+    u_h = cv2.getTrackbarPos("U-H", "Trackbars")
+    u_s = cv2.getTrackbarPos("U-S", "Trackbars")
+    u_v = cv2.getTrackbarPos("U-V", "Trackbars")
+
+    # lower_red = np.array([l_h, l_s, l_v])
+    # upper_red = np.array([u_h, u_s, u_v])
+    # lower_blue = np.array([l_h, l_s, l_v])
+    # upper_blue = np.array([u_h, u_s, u_v])
+    lower_red = np.array([0, 134, 99])
+    upper_red = np.array([14, 255, 231])
+    lower_blue = np.array([38, 96, 77])
+    upper_blue = np.array([180, 255, 255])
+
+    kernel = np.ones((5, 5), np.uint8)
+    maskr = cv2.inRange(hsv, lower_red, upper_red)
+    maskr = cv2.erode(maskr, kernel)
+    maskb = cv2.inRange(hsv, lower_blue, upper_blue)
+    maskb = cv2.erode(maskb, kernel)
+    blurred = cv2.GaussianBlur(maskr, (5, 5), 0)
+
+    # Contours detection
+    contoursR, _ = cv2.findContours(blurred, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contoursB, _ = cv2.findContours(maskb, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    for cr in contoursR:
+        approxr = cv2.approxPolyDP(cr, 0.01 * cv2.arcLength(cr, True), True)
+        arear = cv2.contourArea(cr)
+        if arear > 100:
+            M = cv2.moments(cr)
+            cXR = int(M["m10"] / M["m00"])
+            cYR = int(M["m01"] / M["m00"])
+            # cv2.drawContours(frame, [approxr], -1, (0, 255, 0), 2)
+            cv2.circle(frame, (cXR, cYR), 3, (255, 255, 255), -1)
+            cv2.putText(frame, "Red", (cXR - 20, cYR - 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+    for cb in contoursB:
+        approxb = cv2.approxPolyDP(cb, 0.01 * cv2.arcLength(cb, True), True)
+        areab = cv2.contourArea(cb)
+        if areab > 100:
+            M = cv2.moments(cb)
+            cXB = int(M["m10"] / M["m00"])
+            cYB = int(M["m01"] / M["m00"])
+            # cv2.drawContours(frame, [approxb], -1, (0, 255, 0), 2)
+            cv2.circle(frame, (cXB, cYB), 3, (255, 255, 255), -1)
+            cv2.putText(frame, "Blue", (cXB - 20, cYB - 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+    if cXR > cXB:
+        r = np.array([cXR, cYR])
+        b = np.array([cXB, cYB])
+        c = np.array([cXB, 0])
+        br = r - b
+        bc = c - b
+        cosine_angle = np.dot(br, bc) / (np.linalg.norm(br) * np.linalg.norm(bc))
+        angle = np.arccos(cosine_angle)
+        anglei=str(int(np.degrees(angle)))
+        angleii=int(np.degrees(angle))
+        direction='c'
+        print('c',anglei)
+
+
+        #direction[0] = int(anglei)
+    if cXR < cXB:
+        r = np.array([cXR, cYR])
+        b = np.array([cXB, cYB])
+        c = np.array([cXB, 0])
+        br = r - b
+        bc = c - b
+        cosine_angle = np.dot(br, bc) / (np.linalg.norm(br) * np.linalg.norm(bc))
+        angle = np.arccos(cosine_angle)
+        anglei=str(int(np.degrees(angle)))
+        angleii = -int(np.degrees(angle))
+        direction='a'
+        print('a',anglei)
+        #direction[0] =int(anglei)
+    #cv2.imshow("Frame", frame)
+    # cv2.imshow("maskr",blurred)
+    # cv2.imshow("maskb",maskb)
+    # print(cXR,cYR)
+    #print(cXB, cYB)
+    robox = int(cXB / 80)
+    roboy = int(cYB / 80)
+    redx = robox + 1
+    redy = roboy + 2
+
+
+    img = cv2.imread(img_name, cv2.IMREAD_UNCHANGED)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    lower_white = np.array([0, 58, 8])
+    upper_white = np.array([180, 255, 255])
+    kernel = np.ones((5, 5), np.uint8)
+    maskw = cv2.inRange(hsv, lower_white, upper_white)
+    maskw = cv2.erode(maskw, kernel)
+    #contoursi, _ = cv2.findContours(maskr, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #for cnti in contoursi:
+     #   approx = cv2.approxPolyDP(cnti, 0.01* cv2.arcLength(cnti, True), True)
+      #  cv2.drawContours(img,[approx], -1, (0, 255, 255), 2)
+    #cv2.imshow('img', img)
+    matrix=[]
+    crop=frame
+    for i in range(0,10):
+        matrix.append([])
+    for i in range(0,10):
+        for j in range(0,10):
+            matrix[i].append(j)
+            matrix[i][j]=0
+    for  i in range(0,10):
+        for j in range(0,10):
+             a1=(i*m)
+             a2=((i+1)*m)
+             b1=(j*n)
+             b2=((j+1)*n)
+             #print(a1)
+             #print(a2)
+             #print(b1)
+             #print(b2)
+             roi=maskw[a1:a2,b1:b2]
+             roir = maskr[a1:a2, b1:b2]
+             roib = maskb[a1:a2, b1:b2]
+             roi1=frame[a1:a2,b1:b2]
+             contours, _ = cv2.findContours(roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+             contoursr, _ = cv2.findContours(roir, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+             contoursb, _ = cv2.findContours(roib, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+             for a in contoursr:
+                 if p==0:
+                     area = cv2.contourArea(a)
+                     if area > 5:
+                         cv2.drawContours(roi1, a , -1, (0, 0, 255), 2)
+                         matrix[i][j]=2
+                         ir=i
+                         jr=j
+                 elif p==1 :
+                     area = cv2.contourArea(a)
+                     if area > 5:
+                         cv2.drawContours(roi1, a, -1, (0, 0, 255), 2)
+                         matrix[i][j] = 5
+
+
+             if  matrix[i][j]==2 or matrix[i][j]==5 :
+                 p=1
+                 continue
+             for b in contoursb:
+                 if q==0:
+                     area = cv2.contourArea(b)
+                     if area > 5:
+                         cv2.drawContours(roi1, b , -1, (255, 0, 0), 2)
+                         matrix[i][j]=3
+                 elif q==0 :
+                     area = cv2.contourArea(b)
+                     if area > 5:
+                         cv2.drawContours(roi1, b, -1, (255, 0, 0), 2)
+                         matrix[i][j] = 6
+                         ib = i
+                         jb = j
+             if matrix[i][j]==3 or matrix[i][j]==6:
+                 q=1
+                 continue
+             for cnt in contours:
+                 area = cv2.contourArea(cnt)
+                 if area > 50:
+                     cv2.drawContours(roi1, cnt , -1, (0, 255, 0), 2)
+                     matrix[i][j]=1
+
+             #cv2.imshow('roi1',roi1)
+             #cv2.imshow('frame',frame)
+             #cv2.imshow('crop',crop)
+
+             cv2.waitKey(3)
+    print(matrix)
+    cv2.imshow('frame',frame)
+    #key=cv2.waitKey(10)
+    #if key==27:
+     #   break
+   # main()
+    path=main()
+    print(path)
+    l = len(path)
+    out = [item for t in path for item in t]
+    if out[3]-out[1]==0 and out[2]-out[0]==1 :
+        path1='d'
+        print("d")
+    elif out[3] - out[1] == 0 and out[2] - out[0] == -1:
+        path1 = 'u'
+        print("u")
+    elif out[3] - out[1] == -1 and out[2] - out[0] == 0:
+        path1='b'
+        print("b")
+    elif out[3] - out[1] == 1 and out[2] - out[0] == 0:
+        path1='f'
+        print("f")
+    def convert(list):
+
+        # Converting integer list to string list
+        s = [str(i) for i in list]
+
+        # Join list items using join()
+        res = int("".join(s))
+
+        return (res)
+    outa=convert(out)
+    #print(outa)
+    outs=str(outa)
+    #print(outs)
+    ##arduinodata.write(outs.encode())
+    #x=#arduinodata.read()
+    #print(x)
+    gameDisplay = pygame.display.set_mode((800, 800))
+    pygame.display.set_caption('Arena')
+    gameDisplay.fill(white)
+    for i in range(0, 10):
+            for j in range(0, 10):
+                if matrix[j][i] == 1:
+                    gameDisplay.fill(black, rect=[80 * i, 80 * j, 80, 80])
+                elif matrix[j][i] == 2:
+                    gameDisplay.fill(red, rect=[80 * i, 80 * j, 80, 80])
+                elif matrix[j][i] == 3:
+                    gameDisplay.fill(blue, rect=[80 * i, 80 * j, 80, 80])
+                else:
+                    gameDisplay.fill(white, rect=[80 * i, 80 * j, 80, 80])
+
+    #gameDisplay.fill(blue, rect=[80*redx,80*redy, 80, 80])
+    #gameDisplay.fill(red, rect=[80*redx,80*(redy-1), 80, 80])
+
+    for k in range (1,l):
+        (y,x)=path[k]
+        #print(x,y)
+        gameDisplay.fill(green, rect=[80 * x, 80 * y, 80, 80])
+    pygame.display.update()
+    fout=direction+anglei+'/'+path1
+    print(fout)
+    arduinodata.write(fout.encode())
+    print(arduinodata.in_waiting)
+    while arduinodata.in_waiting==0:
+        print(arduinodata.in_waiting)
+        if arduinodata.in_waiting>0:
+            break
+    if m==1:
+        break
+    key = cv2.waitKey(1)
+    if key == 27:
+        break
+cap.release()
+cv2.destroyAllWindows()
