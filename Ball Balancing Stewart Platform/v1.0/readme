@@ -1,1 +1,33 @@
+BALL BALANCING ROBOT
+
+
+SUMMER PROJECT REPORT
+
+
+STATUS: UNDER DEVELOPMENT
+PROJECT BY: NILENDU GANGULI
+ 
+ABSTRACT
+Ball Balancing Robot (Project Stewart) focuses on implementation of the concepts of Stewart Platform.
+The project consists of a plate controlled by actuators that results in motion in two directions. 
+The controlled movement of the plate is used to move a ball placed on it in a pre-defined manner.
+The position of the ball with respect to the plate is monitored using a camera above the centre of the plate.
+The program that controls the actuators and processes the positional data is executed in a computer.
+The computer takes input from the user and after making the necessary calculations guides the ball to the required
+position or along the instructed path. There is an Arduino connected to the computer via the serial port. 
+Serial communication is established between the program running in the computer and the arduino. 
+The data transferred along the serial port is used the control the servos. Proper movement of the ball demands the 
+working of all systems in coherence. Such coherent operation is achieved through development of efficient control 
+algorithms and calibration of the same. The system gets feedback from two sensors that measures the tilt in each 
+of the two directions and the camera that monitors the position of the ball. The feedback from camera is persistently 
+used to calculate error. This error is the feedback to the control system. The feedback from the sensors reveal the
+orientation of the platform and are used to reduce error in the actuator mechanism.
+ 
+PROBLEM STATEMENT:
+BASIC TASK 1:
+Balancing a ball on a plank (1-Dimensional Balancing). Moving the ball to a desired point in one dimension.
+Advanced task 1:
+Balancing the ball on a plate. Moving the ball to a desired coordinate on the plate.
+Advanced task 2:
+Guiding the ball along a well-defined path e.g., circle, square, rectangle, ellipse.
 
