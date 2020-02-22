@@ -1,0 +1,100 @@
+import cv2
+import time
+import numpy as np
+#import requests
+import pygame
+#url='http://192.168.1.100:8080/shot.jpg'
+
+
+
+x1=110
+x2=346
+y1=75
+y2=597
+xd=x2-x1
+yd=y2-y1
+m=int(xd/10)
+n=int(yd/10)
+c=0
+black=(0,0,0)
+white=(255,255,255)
+
+
+def nothing():
+    # any operation
+    pass
+
+cap = cv2.VideoCapture(0)
+while c<1:
+    _, frame1 = cap.read()
+#    image_resp = requests.get(url)
+ #   img_arr = np.array(bytearray(image_resp.content), dtype=np.uint8)
+  #  frame1 = cv2.imdecode(img_arr, -1)
+    frame=frame1[x1:x2,y1:y2]
+    counter = 0
+    while counter<1:
+        img_name = "opencv_frame_{}.png".format(counter)
+        cv2.imwrite(img_name, frame)
+        print("{} written!".format(img_name))
+        counter = 1
+    img = cv2.imread(img_name, cv2.IMREAD_UNCHANGED)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    lower_red = np.array([0, 58, 8])
+    upper_red = np.array([180, 255, 255])
+
+    kernel = np.ones((5, 5), np.uint8)
+    maskr = cv2.inRange(hsv, lower_red, upper_red)
+    maskr = cv2.erode(maskr, kernel)
+    #contoursi, _ = cv2.findContours(maskr, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #for cnti in contoursi:
+     #   approx = cv2.approxPolyDP(cnti, 0.01* cv2.arcLength(cnti, True), True)
+      #  cv2.drawContours(img,[approx], -1, (0, 255, 255), 2)
+    #cv2.imshow('img', img)
+    matrix=[]
+    #crop=frame[258:345,5:212]
+    for i in range(0,10):
+        matrix.append([])
+    for i in range(0,10):
+        for j in range(0,10):
+            matrix[i].append(j)
+            matrix[i][j]=0
+    for  i in range(0,10):
+        for j in range(0,10):
+             a1=(i*m)
+             a2=((i+1)*m)
+             b1=(j*n)
+             b2=((j+1)*n)
+             print(a1)
+             print(a2)
+             print(b1)
+             print(b2)
+             roi=maskr[a1:a2,b1:b2]
+             roi1=frame[a1:a2,b1:b2]
+             contours, _ = cv2.findContours(roi, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+             for cnt in contours:
+                 area = cv2.contourArea(cnt)
+                 if area > 0:
+                     #cv2.drawContours(roi1, cnt , -1, (0, 255, 0), 2)
+                     matrix[i][j]=1
+             #cv2.imshow('roi1',roi1)
+             #cv2.imshow('frame',frame)
+             #cv2.imshow('crop',crop)
+             #cv2.waitKey(10000000)
+    print(matrix)
+    cv2.imshow('frame',frame)
+    gameDisplay=pygame.display.set_mode((800,800))
+    pygame.display.set_caption('Arena')
+    gameDisplay.fill(white)
+    for  i in range(0,10):
+        for j in range(0,10):
+             if matrix[j][i]== 1 :
+               gameDisplay.fill(black, rect=[80*i,80*j,80,80])
+             else:
+                gameDisplay.fill(white, rect=[80*i, 80*j, 80, 80])
+    pygame.display.update()
+    key=cv2.waitKey(100000000)
+    if key==27:
+        break
+    c=1
+#cap.release()
+cv2.destroyAllWindows()
